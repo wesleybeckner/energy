@@ -22,7 +22,6 @@ server = app.server
 
 def make_time_plot(clickData=None):
     if clickData != None:
-        print(clickData)
         line = clickData['points'][0]['label']
     else:
         line = 'PC'
@@ -53,10 +52,15 @@ def make_time_plot(clickData=None):
     )
 
     fig.update_yaxes(title_text="<b>Energy Usage</b> (GJ)", secondary_y=False)
-    fig.update_yaxes(title_text="<b>CO2/Production</b> (MT/MT)", secondary_y=True)
+    fig.update_yaxes(title_text="<b>CO2/Production</b> (MT/MT)",
+            secondary_y=True)
+    fig.update_layout(xaxis_rangeslider_visible=True)
 
     fig.update_layout(dict(
-        barmode="stack",
+        title="TIME SERIES DRILLDOWN",
+        xaxis={'rangeselector': {'buttons': list([{'count': 1, 'label': '1M', 'step': 'month', 'stepmode': 'backward'},
+                                                  {'count': 6, 'label': '6M', 'step': 'month', 'stepmode': 'backward'},
+                                                  {'step': 'all'}])}},
     ),
     )
     return fig
@@ -102,6 +106,7 @@ def make_bar_plot():
 
     fig.update_layout(dict(
         barmode="stack",
+        title="OVERVIEW",
     ),
     )
     return fig
