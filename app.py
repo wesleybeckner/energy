@@ -57,7 +57,7 @@ def make_time_plot(clickData=None):
     fig.update_layout(xaxis_rangeslider_visible=True)
 
     fig.update_layout(dict(
-        title="TIME SERIES DRILLDOWN",
+        title="TIME SERIES DRILLDOWN, {}".format(line),
         xaxis={'rangeselector': {'buttons': list([{'count': 1, 'label': '1M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'count': 6, 'label': '6M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'step': 'all'}])}},
