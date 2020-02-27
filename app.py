@@ -66,16 +66,36 @@ def make_time_plot(clickData=None):
     return fig
 
 
-def make_bar_plot():
+def make_bar_plot(relayoutData=None):
+    data_filt = data
+    start_str = end_str = None
+    if relayoutData != None:
+        if ("xaxis.autorange" not in relayoutData.keys()) &\
+           ("autosize" not in relayoutData.keys()):
+            if 'xaxis.range' in relayoutData.keys():
+                start_str = relayoutData['xaxis.range'][0]
+                end_str = relayoutData['xaxis.range'][1]
+            elif "xaxis.range[0]" in relayoutData.keys():
+                start_str = relayoutData["xaxis.range[0]"]
+                end_str = relayoutData["xaxis.range[1]"]
+            start_str = start_str.split(" ")[0]
+            end_str = end_str.split(" ")[0]
+            start_obj = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+            end_obj = datetime.datetime.strptime(end_str, '%Y-%m-%d')
+            cols = [col for col in data.columns if (col >= start_obj) &
+                                                    (col <= end_obj)]
+            data_filt = data[cols]
+        else:
+            data_filt = data
     # create usage df
-    df = data.mean(axis=1).reorder_levels([2,1,0])
+    df = data_filt.mean(axis=1).reorder_levels([2,1,0])
     df = pd.DataFrame(df).unstack()
     df = df.reorder_levels([1,0]).loc['GJ'][0].dropna(axis=1)
     df['Totals'] = df.sum(axis=1)
     df = df.sort_values(by='Totals')
 
     # create CO2/MT df
-    df2 = pd.DataFrame(data.mean(axis=1)).loc['CO2/production']
+    df2 = pd.DataFrame(data_filt.mean(axis=1)).loc['CO2/production']
     df2 = df2.loc['mt/mt']
     df2.columns = ['CO2/production']
     df2 = df2.reindex(df.index)
@@ -119,13 +139,34 @@ app.layout = html.Div([
     dcc.Graph(id='time_plot',
               figure=make_time_plot()
               ),
-              ],
-              className="pretty_container"
-              )
+            dcc.Markdown(("""
+                **Zoom and Relayout Data**
+
+                Click and drag on the graph to zoom or click on the zoom
+                buttons in the graph's menu bar.
+                Clicking on legend items will also fire
+                this event.
+            """)),
+            html.Pre(id='relayout-data'),
+        ],
+        className="pretty_container"
+        )
 
 app.config.suppress_callback_exceptions = False
 
 # Update page
+@app.callback(
+    Output('relayout-data', 'children'),
+    [Input('time_plot', 'relayoutData')])
+def display_relayout_data(relayoutData):
+    return json.dumps(relayoutData, indent=2)
+
+@app.callback(
+    Output('bar_plot', 'figure'),
+    [Input('time_plot', 'relayoutData')])
+def display_bar_data(relayoutData):
+    return make_bar_plot(relayoutData)
+
 @app.callback(
     Output('time_plot', 'figure'),
     [Input('bar_plot', 'clickData')]
