@@ -139,15 +139,8 @@ app.layout = html.Div([
     dcc.Graph(id='time_plot',
               figure=make_time_plot()
               ),
-            dcc.Markdown(("""
-                **Zoom and Relayout Data**
-
-                Click and drag on the graph to zoom or click on the zoom
-                buttons in the graph's menu bar.
-                Clicking on legend items will also fire
-                this event.
-            """)),
-            html.Pre(id='relayout-data'),
+    # html.Pre(id='relayout-data'
+    #           ),
         ],
         className="pretty_container"
         )
@@ -155,11 +148,11 @@ app.layout = html.Div([
 app.config.suppress_callback_exceptions = False
 
 # Update page
-@app.callback(
-    Output('relayout-data', 'children'),
-    [Input('time_plot', 'relayoutData')])
-def display_relayout_data(relayoutData):
-    return json.dumps(relayoutData, indent=2)
+# @app.callback(
+#     Output('relayout-data', 'children'),
+#     [Input('time_plot', 'relayoutData')])
+# def display_relayout_data(relayoutData):
+#     return json.dumps(relayoutData, indent=2)
 
 @app.callback(
     Output('bar_plot', 'figure'),
