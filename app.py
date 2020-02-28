@@ -14,50 +14,164 @@ import datetime
 
 data = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard', header=0)
 data = data.set_index(['Item', 'Units', 'Plant'])
+data.columns = pd.to_datetime(data.columns)
+axis_options = data.index.get_level_values(0).unique()
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
 )
 server = app.server
 
-def make_time_plot(clickData=None):
-    if clickData != None:
+# def make_year_plot():
+#     GJ = data.loc[data.index.get_level_values(0).isin(['Electricity', 'Nat. Gas', 'Steam usage'])]\
+#         .groupby('Item').sum().T.resample('Y').sum().T
+#
+#     mtmt = data.loc[data.index.get_level_values(0).isin(['CO2/production'])]\
+#         .groupby('Item').sum().T.resample('Y').sum().T
+#
+#     GJmt = data.loc[data.index.get_level_values(0).isin(['Energy Intensity'])]\
+#         .groupby('Item').sum().T.resample('Y').sum().T
+#
+#     mt = data.loc[data.index.get_level_values(0).isin(['Production', 'CO2'])]\
+#         .groupby('Item').sum().T.resample('Y').sum().T
+#
+#     fig = make_subplots(specs=[[{"secondary_y": True}]])
+#     df = mt
+#     for index in df.index:
+#         fig.add_trace(
+#         go.Bar(
+#         name=index,
+#         y=df.loc[index],
+#         x=df.columns,
+#         ),
+#         secondary_y=False
+#     )
+#     fig.update_layout(dict(
+#     barmode="stack",
+#     ),
+#     )
+#     return fig
+
+def make_time_plot(clickData=None, selectedData=None, dropdown=None):
+    if dropdown != None:
+        items = dropdown
+    else:
+        items = ['Electricity', 'Nat. Gas', 'Steam usage', 'CO2/production']
+    if selectedData != None:
+        line = pd.Series(pd.DataFrame.from_dict(selectedData['points'])['x'].unique())
+    elif clickData != None:
         line = clickData['points'][0]['label']
     else:
-        line = 'PC'
-    GJ = data.reorder_levels([2,1,0]).loc[line, 'GJ']#.droplevel(1)
-    GJ = GJ.T[['Electricity', 'Nat. Gas', 'Steam usage']].T
-    mtmt = data.reorder_levels([2,1,0]).loc[line, 'mt/mt']
-    mtmt.T.loc[mtmt.T["CO2/production"] == 0] = np.nan
+        line = data.index.get_level_values(2).unique()
 
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    for index in GJ.index:
-        fig.add_trace(
-        go.Scatter(
-        name=index,
-        y=GJ.loc[index],
-        x=GJ.columns,
+    if type(line) == str:
+        line = pd.Series(line)
+
+    df = data.loc[(data.index.get_level_values(2).isin(line)) & # grab the right lines
+             (data.index.get_level_values(0).isin(items))]
+
+    units = df.index.get_level_values(1).unique() # detect number of different unit types; compute axes
+
+    fig = go.Figure()
+    if len(units) == 1:
+        titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
+        if '/' not in units: # sum Item values if no '/' otherwise take weight average
+            for index in df.index.get_level_values(0).unique():
+                fig.add_trace(
+                go.Scatter(
+                name=index,
+                y=df.loc[index].sum(),
+                x=df.columns,
+                ),
+            )
+        else:
+            for index in df.index.get_level_values(0).unique():
+                fig.add_trace(
+                go.Scatter(
+                name=index,
+                y=df.loc[index].mean(),
+                x=df.columns,
+                ),
+            )
+    else:
+
+        titles = []
+        for index2, unit in enumerate(units):
+            df2 = df.loc[(df.index.get_level_values(1) == unit)]
+            titles.append("{}".format(df2.index.get_level_values(1).unique()[0]))
+            if '/' not in unit: # sum Item values if no '/' otherwise take weight average
+                for index in df2.index.get_level_values(0).unique():
+                    fig.add_trace(
+                    go.Scatter(
+                    name="{} ({})".format(index,unit),
+                    y=df2.loc[index].sum(),
+                    x=df2.columns,
+                    yaxis="y{}".format(index2+1)
+                    ),
+                )
+            else:
+                for index in df2.index.get_level_values(0).unique():
+                    fig.add_trace(
+                    go.Scatter(
+                    name="{} ({})".format(index,unit),
+                    y=df2.loc[index].mean(),
+                    x=df2.columns,
+                    yaxis="y{}".format(index2+1)
+                    ),
+                )
+
+    # if line > 1 view as boxplot
+    # view as button: rollup 1 M, 1 Y, All
+    # view as button: line, bar, statistical
+
+    ################
+    # LAYOUT
+    ################
+    r_domain = min(np.round(1.25 - (len(units)*.15),2), 1)
+    fig.update_layout(
+        xaxis=dict(
+            domain=[0, r_domain]
         ),
-        secondary_y=False
+        yaxis=dict(
+            title="{}".format(titles[0]),
+        ),
     )
 
-    for index in mtmt.index:
-        fig.add_trace(
-        go.Scatter(
-        name=index,
-        y=mtmt.loc[index],
-        x=mtmt.columns,
-        ),
-        secondary_y=True
-    )
+    positionl = .3
+    positionr = r_domain
+    for i in range(2,len(units)+1):
+        if i == 1:
+            positionl = 0.3
+            side = 'left'
+            anchor = 'x'
+            position = None
+        elif i == 2:
+            side = 'right'
+            positionl = positionl - .15
+            position = positionl
+            anchor = 'x'
+        else:
+            side= 'right'
+            positionr = positionr + .15
+            position = positionr
+            anchor = 'free'
 
-    fig.update_yaxes(title_text="<b>Energy Usage</b> (GJ)", secondary_y=False)
-    fig.update_yaxes(title_text="<b>CO2/Production</b> (MT/MT)",
-            secondary_y=True)
-    fig.update_layout(xaxis_rangeslider_visible=True)
+        fig.update_layout(
+            {'yaxis{}'.format(i): {'anchor': anchor,
+                   'overlaying': 'y',
+                   'position': position,
+                   'side': side,
+                   'title': {'text': '{}'.format(titles[i-1])}}
+        }
+        )
+    fig.update_layout(xaxis_rangeslider_visible=False)
 
+    if len(items) == 1:
+        title="TIMESERIES; {}; {}".format(items[0], ", ".join(line.values))
+    else:
+        title="TIMESERIES; {}".format(", ".join(line.values))
     fig.update_layout(dict(
-        title="TIME SERIES DRILLDOWN, {}".format(line),
+        title=title,
         xaxis={'rangeselector': {'buttons': list([{'count': 1, 'label': '1M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'count': 6, 'label': '6M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'step': 'all'}])}},
@@ -127,20 +241,33 @@ def make_bar_plot(relayoutData=None):
     fig.update_layout(dict(
         barmode="stack",
         title="OVERVIEW",
+        # clickmode='event+select',
     ),
     )
     return fig
 
 # Describe the layout/ UI of the app
 app.layout = html.Div([
-    dcc.Graph(id='bar_plot',
-              figure=make_bar_plot()
-              ),
+    dcc.Dropdown(
+        options=[
+            {"label": str(county), "value": str(county)} for county in axis_options
+        ],
+        value=['Electricity', 'Nat. Gas', 'Steam usage', 'CO2/production'],
+        multi=True,
+        id='dropdown'
+    ),
+    # dcc.Graph(id='year_plot',
+    #           figure=make_year_plot()
+    #           ),
     dcc.Graph(id='time_plot',
               figure=make_time_plot()
               ),
-    # html.Pre(id='relayout-data'
-    #           ),
+    dcc.Graph(id='bar_plot',
+              figure=make_bar_plot()
+              ),
+
+    html.Pre(id='relayout-data'
+              ),
         ],
         className="pretty_container"
         )
@@ -150,7 +277,7 @@ app.config.suppress_callback_exceptions = False
 # Update page
 # @app.callback(
 #     Output('relayout-data', 'children'),
-#     [Input('time_plot', 'relayoutData')])
+#     [Input('bar_plot', 'selectedData')])
 # def display_relayout_data(relayoutData):
 #     return json.dumps(relayoutData, indent=2)
 
@@ -162,10 +289,12 @@ def display_bar_data(relayoutData):
 
 @app.callback(
     Output('time_plot', 'figure'),
-    [Input('bar_plot', 'clickData')]
+    [Input('bar_plot', 'clickData'),
+     Input('bar_plot', 'selectedData'),
+     Input('dropdown', 'value')]
 )
-def display_time_plot(barClickData):
-    return make_time_plot(barClickData)
+def display_time_plot(barClickData, barSelectedData, dropdown):
+    return make_time_plot(barClickData, barSelectedData, dropdown)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
