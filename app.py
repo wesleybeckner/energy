@@ -55,7 +55,7 @@ server = app.server
 def make_time_plot(clickData=None,
                    selectedData=None,
                    dropdown=None,
-                   sample='Year',
+                   sample='Month',
                    plot_type='Scatter'):
     if dropdown != None:
         items = dropdown
@@ -184,7 +184,7 @@ def make_time_plot(clickData=None,
     ################
     # LAYOUT
     ################
-    r_domain = min(np.round(1.25 - (len(units)*.15),2), 1)
+    r_domain = min(1.25 - (len(units)*.125), .95)
     fig.update_layout(
         xaxis=dict(
             domain=[0, r_domain]
@@ -209,7 +209,7 @@ def make_time_plot(clickData=None,
             anchor = 'x'
         else:
             side= 'right'
-            positionr = positionr + .15
+            positionr = positionr + .1
             position = positionr
             anchor = 'free'
 
@@ -347,8 +347,8 @@ def make_bar_plot(relayoutData=None,
     ################
     # LAYOUT
     ################
-    r_domain = min(1.25 - (len(units)*.15), 1)
-    print(r_domain)
+    r_domain = min(1.25 - (len(units)*.125), .95)
+
     fig.update_layout(
         xaxis=dict(
             domain=[0, r_domain]
@@ -373,10 +373,10 @@ def make_bar_plot(relayoutData=None,
             anchor = 'x'
         else:
             side= 'right'
-            positionr = positionr + .15
+            positionr = positionr + .1
             position = positionr
             anchor = 'free'
-        print(position, 'asdf')
+
         if position > 1:
             position = 1
         fig.update_layout(
@@ -412,7 +412,7 @@ app.layout = html.Div([
     dcc.RadioItems(
                 id='sample',
                 options=[{'label': i, 'value': i} for i in ['Month', 'Year']],
-                value='Year',
+                value='Month',
                 labelStyle={'display': 'inline-block'}
             ),
     # dcc.RadioItems(
@@ -433,7 +433,8 @@ app.layout = html.Div([
 
     html.Pre(id='relayout-data'
               ),
-        ],
+        ],style={'min-width': '1200px',
+                'max-width': '1500px'},
         className="pretty_container"
         )
 
