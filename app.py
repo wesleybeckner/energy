@@ -2,6 +2,7 @@
 import dash
 import json
 import dash_core_components as dcc
+import dash_daq as daq
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output
@@ -51,6 +52,49 @@ server = app.server
 #     ),
 #     )
 #     return fig
+
+def make_gauge(relayoutData=None,
+                 clickData=None,
+                 selectedData=None):
+    data_filt = data
+    date_title = 'All Time'
+    start_str = end_str = None
+    if relayoutData != None:
+        if ("xaxis.autorange" not in relayoutData.keys()) &\
+           ("autosize" not in relayoutData.keys()):
+            if 'xaxis.range' in relayoutData.keys():
+                start_str = relayoutData['xaxis.range'][0]
+                end_str = relayoutData['xaxis.range'][1]
+            elif "xaxis.range[0]" in relayoutData.keys():
+                start_str = relayoutData["xaxis.range[0]"]
+                end_str = relayoutData["xaxis.range[1]"]
+            start_str = start_str.split(" ")[0]
+            end_str = end_str.split(" ")[0]
+            start_obj = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+            end_obj = datetime.datetime.strptime(end_str, '%Y-%m-%d')
+            cols = [col for col in data.columns if (col >= start_obj) &
+                                                    (col <= end_obj)]
+            data_filt = data[cols]
+
+            date_title = "{}, {} - {}, {}".format(start_obj.month,
+                start_obj.year, end_obj.month, end_obj.year)
+        else:
+            data_filt = data
+            date_title = 'All Time'
+    if selectedData != None:
+        line = pd.Series(pd.DataFrame.from_dict(selectedData['points'])['x'].unique())
+    elif clickData != None:
+        line = clickData['points'][0]['label']
+    else:
+        line = data.index.get_level_values(2).unique()
+    if type(line) == str:
+        line = pd.Series(line)
+    items = ['Production', 'CO2']
+
+    df = data_filt.loc[(data_filt.index.get_level_values(2).isin(line)) & # grab the right lines
+             (data_filt.index.get_level_values(0).isin(items))]
+    co2_prod = df.loc['CO2'].sum().sum() / df.loc['Production'].sum().sum()
+    return co2_prod
 
 def make_time_plot(clickData=None,
                    selectedData=None,
@@ -238,7 +282,158 @@ def make_time_plot(clickData=None,
     return fig
 
 
-def make_bar_plot(relayoutData=None,
+def make_bar_plot_single(relayoutData=None,
+                  dropdown=None,):
+    # time filter
+    data_filt = data
+    date_title = 'All Time'
+    start_str = end_str = None
+    if relayoutData != None:
+        if ("xaxis.autorange" not in relayoutData.keys()) &\
+           ("autosize" not in relayoutData.keys()):
+            if 'xaxis.range' in relayoutData.keys():
+                start_str = relayoutData['xaxis.range'][0]
+                end_str = relayoutData['xaxis.range'][1]
+            elif "xaxis.range[0]" in relayoutData.keys():
+                start_str = relayoutData["xaxis.range[0]"]
+                end_str = relayoutData["xaxis.range[1]"]
+            start_str = start_str.split(" ")[0]
+            end_str = end_str.split(" ")[0]
+            start_obj = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+            end_obj = datetime.datetime.strptime(end_str, '%Y-%m-%d')
+            cols = [col for col in data.columns if (col >= start_obj) &
+                                                    (col <= end_obj)]
+            data_filt = data[cols]
+
+            date_title = "{}, {} - {}, {}".format(start_obj.month,
+                start_obj.year, end_obj.month, end_obj.year)
+        else:
+            data_filt = data
+            date_title = 'All Time'
+
+    # item filter
+    if dropdown != None:
+        items = [dropdown[-1]]
+    else:
+        items = ['Electricity', 'Nat. Gas', 'Steam usage']
+        items = ['CO2/production']
+
+    df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
+
+    units = df.index.get_level_values(1).unique() # detect number of different unit types; compute axes
+
+    fig = go.Figure()
+    colors = [
+        '#1f77b4',  # muted blue
+        '#ff7f0e',  # safety orange
+        '#2ca02c',  # cooked asparagus green
+        '#d62728',  # brick red
+        '#9467bd',  # muted purple
+        '#8c564b',  # chestnut brown
+        '#e377c2',  # raspberry yogurt pink
+        '#7f7f7f',  # middle gray
+        '#bcbd22',  # curry yellow-green
+        '#17becf'   # blue-teal
+    ]
+    if len(units) == 1:
+        titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
+        df2 = df.reorder_levels([0,2,1])
+        for index in df2.index.get_level_values(0).unique():
+            if '/' not in units: # sum Item values if no '/' otherwise take weight average
+                y=df2.loc[index].sum(axis=1)
+            else:
+                y=df2.loc[index].mean(axis=1)
+            fig.add_trace(
+                go.Bar(
+                name=index,
+                y=y,
+                x=df2.loc[index].index.get_level_values(0),
+                ),
+                )
+    else:
+        titles = []
+        for index2, unit in enumerate(units):
+            df2 = df.loc[(df.index.get_level_values(1) == unit)]
+            df2 = df2.reorder_levels([0,2,1])
+            titles.append("{}".format(df2.index.get_level_values(2).unique()[0]))
+            for ind, index in enumerate(df2.index.get_level_values(0).unique()):
+                if index2 > 0:
+                    showlegend=False
+                else:
+                    showlegend=True
+                yaxis="y{}".format(index2+1)
+                if '/' not in unit: # sum Item values if no '/' otherwise take weight average
+                    y=df2.loc[index].sum(axis=1)
+                else:
+                    y=df2.loc[index].mean(axis=1)
+                fig.add_trace(
+                go.Bar(
+                name="{}".format(index),
+                y=y,
+                x=df2.loc[index].index.get_level_values(0),
+                legendgroup=index,
+                yaxis=yaxis,
+                marker_color=colors[ind],
+                showlegend=showlegend,
+                ),
+                )
+
+    ################
+    # LAYOUT
+    ################
+    r_domain = min(1.25 - (len(units)*.125), .95)
+
+    fig.update_layout(
+        xaxis=dict(
+            domain=[0, r_domain]
+        ),
+        yaxis=dict(
+            title="{}".format(titles[0]),
+        ),
+    )
+
+    positionl = .3
+    positionr = r_domain
+    for i in range(2,len(units)+1):
+        if i == 1:
+            positionl = 0.3
+            side = 'left'
+            anchor = 'x'
+            position = None
+        elif i == 2:
+            side = 'right'
+            positionl = positionl - .15
+            position = positionl
+            anchor = 'x'
+        else:
+            side= 'right'
+            positionr = positionr + .1
+            position = positionr
+            anchor = 'free'
+
+        if position > 1:
+            position = 1
+        fig.update_layout(
+            {'yaxis{}'.format(i): {'anchor': anchor,
+                   'overlaying': 'y',
+                   'position': position,
+                   'side': side,
+                   'title': {'text': '{}'.format(titles[i-1])}
+                                  }
+        }
+        )
+    if len(items) == 1:
+        title="{}, By Site, {}".format(items[0], date_title)
+    else:
+        title="By Site: {}".format(date_title)
+    fig.update_layout(dict(
+        title=title,
+        barmode="group",
+    ),
+    )
+    return fig
+
+def make_bar_plot_multiple(relayoutData=None,
                   dropdown=None,):
     # time filter
     data_filt = data
@@ -272,11 +467,7 @@ def make_bar_plot(relayoutData=None,
         items = dropdown
     else:
         items = ['Electricity', 'Nat. Gas', 'Steam usage']
-        items = items + ['CO2/production']# + ['Energy Intensity']
-    #     items = ['Energy Intensity']
-
-    # if type(line) == str:
-    #     line = pd.Series(line)
+        items = items + ['CO2/production']
 
     df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
 
@@ -295,54 +486,48 @@ def make_bar_plot(relayoutData=None,
         '#bcbd22',  # curry yellow-green
         '#17becf'   # blue-teal
     ]
-    if len(units) == 1:
-        titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
-        if '/' not in units: # sum Item values if no '/' otherwise take weight average
-            df2 = df.reorder_levels([0,2,1])
-            for index in df2.index.get_level_values(0).unique():
-                fig.add_trace(
-                    go.Bar(
-                    name=index,
-                    y=df2.loc[index].sum(axis=1),
-                    x=df2.loc[index].index.get_level_values(0),
-                    ),
-                    )
-        else:
-            for index in df2.index.get_level_values(0).unique():
-                fig.add_trace(
-                    go.Bar(
-                    name=index,
-                    y=df2.loc[index].mean(axis=1),
-                    x=df2.loc[index].index.get_level_values(0),
-                    ),
-                    )
-    else:
-        titles = []
-        for index2, unit in enumerate(units):
-            df2 = df.loc[(df.index.get_level_values(1) == unit)]
-            df2 = df2.reorder_levels([2,0,1])
-            titles.append("{}".format(df2.index.get_level_values(2).unique()[0]))
-            for ind, index in enumerate(df2.index.get_level_values(0).unique()):
-                if index2 > 0:
-                    showlegend=False
-                else:
-                    showlegend=True
-                yaxis="y{}".format(index2+1)
-                if '/' not in unit: # sum Item values if no '/' otherwise take weight average
-                    y=df2.loc[index].sum(axis=1)
-                else:
-                    y=df2.loc[index].mean(axis=1)
-                fig.add_trace(
-                go.Bar(
-                name="{}".format(index),
-                y=y,
-                x=df2.loc[index].index.get_level_values(0),
-                legendgroup=index,
-                yaxis=yaxis,
-                marker_color=colors[ind],
-                showlegend=showlegend,
-                ),
-                )
+    # if len(units) == 1:
+    #     titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
+    #     df2 = df.reorder_levels([0,2,1])
+    #     for index in df2.index.get_level_values(0).unique():
+    #         if '/' not in units: # sum Item values if no '/' otherwise take weight average
+    #             y=df2.loc[index].sum(axis=1)
+    #         else:
+    #             y=df2.loc[index].mean(axis=1)
+    #         fig.add_trace(
+    #             go.Bar(
+    #             name=index,
+    #             y=y,
+    #             x=df2.loc[index].index.get_level_values(0),
+    #             ),
+    #             )
+    # else:
+    titles = []
+    for index2, unit in enumerate(units):
+        df2 = df.loc[(df.index.get_level_values(1) == unit)]
+        df2 = df2.reorder_levels([2,0,1])
+        titles.append("{}".format(df2.index.get_level_values(2).unique()[0]))
+        for ind, index in enumerate(df2.index.get_level_values(0).unique()):
+            if index2 > 0:
+                showlegend=False
+            else:
+                showlegend=True
+            yaxis="y{}".format(index2+1)
+            if '/' not in unit: # sum Item values if no '/' otherwise take weight average
+                y=df2.loc[index].sum(axis=1)
+            else:
+                y=df2.loc[index].mean(axis=1)
+            fig.add_trace(
+            go.Bar(
+            name="{}".format(index),
+            y=y,
+            x=df2.loc[index].index.get_level_values(0),
+            legendgroup=index,
+            yaxis=yaxis,
+            marker_color=colors[ind],
+            showlegend=showlegend,
+            ),
+            )
 
     ################
     # LAYOUT
@@ -427,13 +612,27 @@ app.layout = html.Div([
     dcc.Graph(id='time_plot',
               figure=make_time_plot()
               ),
-    dcc.Graph(id='bar_plot',
-              figure=make_bar_plot()
+    dcc.Graph(id='bar_plot_single',
+              figure=make_bar_plot_single()
               ),
+    dcc.Graph(id='bar_plot_multiple',
+              figure=make_bar_plot_multiple()
+              ),
+
 
     html.Pre(id='relayout-data'
               ),
-        ],style={'min-width': '1200px',
+    html.Div([
+    daq.Gauge(
+        id='my-gauge',
+        label="CO2/production",
+        value=0.16,
+        max=1,
+        min=0,
+        color={"gradient":True,"ranges":{"green":[0,.6],"yellow":[.6,.8],"red":[.8,1]}},
+    ),
+]),
+        ],style={'min-width': '1100px',
                 'max-width': '1500px'},
         className="pretty_container"
         )
@@ -443,21 +642,33 @@ app.config.suppress_callback_exceptions = False
 # Update page
 # @app.callback(
 #     Output('relayout-data', 'children'),
-#     [Input('bar_plot', 'selectedData')])
-# def display_relayout_data(relayoutData):
-#     return json.dumps(relayoutData, indent=2)
-
+#     [Input('bar_plot_single', 'selectedData')])
+# def display_relayout_data(selectedData):
+#     return json.dumps(selectedData, indent=2)
 @app.callback(
-    Output('bar_plot', 'figure'),
+    Output('my-gauge', 'value'),
+    [Input('time_plot', 'relayoutData'),
+     Input('bar_plot_single', 'clickData'),
+     Input('bar_plot_single', 'selectedData')]
+)
+def update_gauge(relayoutData, clickData, selectedData):
+    return make_gauge(relayoutData, clickData, selectedData)
+@app.callback(
+    Output('bar_plot_single', 'figure'),
     [Input('time_plot', 'relayoutData'),
      Input('dropdown', 'value')])
 def display_bar_data(relayoutData, dropdown):
-    return make_bar_plot(relayoutData, dropdown)
-
+    return make_bar_plot_single(relayoutData, dropdown)
+@app.callback(
+    Output('bar_plot_multiple', 'figure'),
+    [Input('time_plot', 'relayoutData'),
+     Input('dropdown', 'value')])
+def display_bar_data(relayoutData, dropdown):
+    return make_bar_plot_multiple(relayoutData, dropdown)
 @app.callback(
     Output('time_plot', 'figure'),
-    [Input('bar_plot', 'clickData'),
-     Input('bar_plot', 'selectedData'),
+    [Input('bar_plot_single', 'clickData'),
+     Input('bar_plot_single', 'selectedData'),
      Input('dropdown', 'value'),
      Input('sample', 'value')]
 )
