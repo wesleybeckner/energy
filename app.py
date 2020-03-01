@@ -221,7 +221,7 @@ def make_time_plot(clickData=None,
                    'title': {'text': '{}'.format(titles[i-1])}}
         }
         )
-    fig.update_layout(xaxis_rangeslider_visible=True)
+    fig.update_layout(xaxis_rangeslider_visible=False)
 
     if len(items) == 1:
         title="TIMESERIES; {}; {}".format(items[0], ", ".join(line.values))
@@ -242,6 +242,7 @@ def make_bar_plot(relayoutData=None,
                   dropdown=None,):
     # time filter
     data_filt = data
+    date_title = 'All Time'
     start_str = end_str = None
     if relayoutData != None:
         if ("xaxis.autorange" not in relayoutData.keys()) &\
@@ -259,8 +260,12 @@ def make_bar_plot(relayoutData=None,
             cols = [col for col in data.columns if (col >= start_obj) &
                                                     (col <= end_obj)]
             data_filt = data[cols]
+
+            date_title = "{}, {} - {}, {}".format(start_obj.month,
+                start_obj.year, end_obj.month, end_obj.year)
         else:
             data_filt = data
+            date_title = 'All Time'
 
     # item filter
     if dropdown != None:
@@ -342,7 +347,8 @@ def make_bar_plot(relayoutData=None,
     ################
     # LAYOUT
     ################
-    r_domain = min(np.round(1.25 - (len(units)*.15),2), 1)
+    r_domain = min(1.25 - (len(units)*.15), 1)
+    print(r_domain)
     fig.update_layout(
         xaxis=dict(
             domain=[0, r_domain]
@@ -370,7 +376,9 @@ def make_bar_plot(relayoutData=None,
             positionr = positionr + .15
             position = positionr
             anchor = 'free'
-
+        print(position, 'asdf')
+        if position > 1:
+            position = 1
         fig.update_layout(
             {'yaxis{}'.format(i): {'anchor': anchor,
                    'overlaying': 'y',
@@ -381,9 +389,9 @@ def make_bar_plot(relayoutData=None,
         }
         )
     if len(items) == 1:
-        title="{}, By Site".format(items[0])
+        title="{}, By Site, {}".format(items[0], date_title)
     else:
-        title="By Site"
+        title="By Site: {}".format(date_title)
     fig.update_layout(dict(
         title=title,
         barmode="group",
