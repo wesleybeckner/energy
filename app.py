@@ -277,13 +277,143 @@ def make_time_plot(clickData=None,
         xaxis={'rangeselector': {'buttons': list([{'count': 1, 'label': '1M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'count': 6, 'label': '6M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'step': 'all'}])}},
+
+
     ),
     )
+    fig.update_layout({
+                "plot_bgcolor": "#F9F9F9",
+                "paper_bgcolor": "#F9F9F9",
+    })
     return fig
 
+def make_bar_plot_delta(relayoutData=None,
+                         dropdown=None,):
+    # time filter
+    data_filt = data
+    date_title = 'All Time'
+    start_str = end_str = None
+    if relayoutData != None:
+        if ("xaxis.autorange" not in relayoutData.keys()) &\
+           ("autosize" not in relayoutData.keys()):
+            if 'xaxis.range' in relayoutData.keys():
+                start_str = relayoutData['xaxis.range'][0]
+                end_str = relayoutData['xaxis.range'][1]
+            elif "xaxis.range[0]" in relayoutData.keys():
+                start_str = relayoutData["xaxis.range[0]"]
+                end_str = relayoutData["xaxis.range[1]"]
+            start_str = start_str.split(" ")[0]
+            end_str = end_str.split(" ")[0]
+            start_obj = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+            end_obj = datetime.datetime.strptime(end_str, '%Y-%m-%d')
+            cols = [col for col in data.columns if (col >= start_obj) &
+                                                    (col <= end_obj)]
+            data_filt = data[cols]
+
+            date_title = "{}, {} - {}, {}".format(start_obj.month,
+                start_obj.year, end_obj.month, end_obj.year)
+        else:
+            data_filt = data
+            date_title = 'All Time'
+
+    # item filter
+    if dropdown != None:
+        items = [dropdown[-1]]
+    else:
+        items = ['Electricity', 'Nat. Gas', 'Steam usage']
+        items = ['CO2/production']
+
+    df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
+
+    units = df.index.get_level_values(1).unique() # detect number of different unit types; compute axes
+
+    fig = go.Figure()
+    colors = [
+        '#1f77b4',  # muted blue
+        '#ff7f0e',  # safety orange
+        '#2ca02c',  # cooked asparagus green
+        '#d62728',  # brick red
+        '#9467bd',  # muted purple
+        '#8c564b',  # chestnut brown
+        '#e377c2',  # raspberry yogurt pink
+        '#7f7f7f',  # middle gray
+        '#bcbd22',  # curry yellow-green
+        '#17becf'   # blue-teal
+    ]
+
+    titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
+    df2 = df.reorder_levels([0,2,1])
+    for index in df2.index.get_level_values(0).unique():
+        y=df2.loc[index][df2.columns[-1]] - df2.loc[index][df2.columns[0]]
+        fig.add_trace(
+            go.Bar(
+            name=index,
+            y=y,
+            x=df2.loc[index].index.get_level_values(0),
+            ),
+            )
+
+    ################
+    # LAYOUT
+    ################
+    r_domain = min(1.25 - (len(units)*.125), .95)
+
+    fig.update_layout(
+        xaxis=dict(
+            domain=[0, r_domain]
+        ),
+        yaxis=dict(
+            title="{}".format(titles[0]),
+        ),
+    )
+
+    positionl = .3
+    positionr = r_domain
+    for i in range(2,len(units)+1):
+        if i == 1:
+            positionl = 0.3
+            side = 'left'
+            anchor = 'x'
+            position = None
+        elif i == 2:
+            side = 'right'
+            positionl = positionl - .15
+            position = positionl
+            anchor = 'x'
+        else:
+            side= 'right'
+            positionr = positionr + .1
+            position = positionr
+            anchor = 'free'
+
+        if position > 1:
+            position = 1
+        fig.update_layout(
+            {'yaxis{}'.format(i): {'anchor': anchor,
+                   'overlaying': 'y',
+                   'position': position,
+                   'side': side,
+                   'title': {'text': '{}'.format(titles[i-1])}
+                                  }
+        }
+        )
+    if len(items) == 1:
+        title="{}, By Site, {}".format(items[0], date_title)
+    else:
+        title="By Site: {}".format(date_title)
+    fig.update_layout(dict(
+        title=title,
+        barmode="group",
+    ),
+    )
+    fig.update_layout({
+                "plot_bgcolor": "#F9F9F9",
+                "paper_bgcolor": "#F9F9F9",
+    })
+    return fig
 
 def make_bar_plot_single(relayoutData=None,
-                  dropdown=None,):
+                         dropdown=None,):
     # time filter
     data_filt = data
     date_title = 'All Time'
@@ -350,33 +480,6 @@ def make_bar_plot_single(relayoutData=None,
                 x=df2.loc[index].index.get_level_values(0),
                 ),
                 )
-    else:
-        titles = []
-        for index2, unit in enumerate(units):
-            df2 = df.loc[(df.index.get_level_values(1) == unit)]
-            df2 = df2.reorder_levels([0,2,1])
-            titles.append("{}".format(df2.index.get_level_values(2).unique()[0]))
-            for ind, index in enumerate(df2.index.get_level_values(0).unique()):
-                if index2 > 0:
-                    showlegend=False
-                else:
-                    showlegend=True
-                yaxis="y{}".format(index2+1)
-                if '/' not in unit: # sum Item values if no '/' otherwise take weight average
-                    y=df2.loc[index].sum(axis=1)
-                else:
-                    y=df2.loc[index].mean(axis=1)
-                fig.add_trace(
-                go.Bar(
-                name="{}".format(index),
-                y=y,
-                x=df2.loc[index].index.get_level_values(0),
-                legendgroup=index,
-                yaxis=yaxis,
-                marker_color=colors[ind],
-                showlegend=showlegend,
-                ),
-                )
 
     ################
     # LAYOUT
@@ -431,6 +534,10 @@ def make_bar_plot_single(relayoutData=None,
         barmode="group",
     ),
     )
+    fig.update_layout({
+                "plot_bgcolor": "#F9F9F9",
+                "paper_bgcolor": "#F9F9F9",
+    })
     return fig
 
 def make_bar_plot_multiple(relayoutData=None,
@@ -582,59 +689,92 @@ def make_bar_plot_multiple(relayoutData=None,
         barmode="group",
     ),
     )
+    fig.update_layout({
+                "plot_bgcolor": "#F9F9F9",
+                "paper_bgcolor": "#F9F9F9",
+    })
     return fig
 
 # Describe the layout/ UI of the app
 app.layout = html.Div([
+html.Div([
+html.Div([
     dcc.Dropdown(
         options=[
             {"label": str(county), "value": str(county)} for county in axis_options
         ],
         value=['Electricity', 'Nat. Gas', 'Steam usage', 'CO2/production'],
         multi=True,
-        id='dropdown'
-    ),
+        id='dropdown'),
     dcc.RadioItems(
                 id='sample',
                 options=[{'label': i, 'value': i} for i in ['Month', 'Year']],
                 value='Month',
-                labelStyle={'display': 'inline-block'}
+                labelStyle={'display': 'inline-block'}),
+            ], className="twelve columns"
             ),
-    # dcc.RadioItems(
-    #             id='plot_type',
-    #             options=[{'label': i, 'value': i} for i in ['Bar', 'Scatter']],
-    #             value='Scatter',
-    #             labelStyle={'display': 'inline-block'}
-    #         ),
-    # dcc.Graph(id='year_plot',
-    #           figure=make_year_plot()
-    #           ),
-    dcc.Graph(id='time_plot',
-              figure=make_time_plot()
-              ),
-    dcc.Graph(id='bar_plot_single',
-              figure=make_bar_plot_single()
-              ),
-    dcc.Graph(id='bar_plot_multiple',
-              figure=make_bar_plot_multiple()
-              ),
 
-
-    html.Pre(id='relayout-data'
-              ),
+        html.Div([
+            dcc.Graph(id='time_plot',
+                      figure=make_time_plot()
+                      ),
+                  ], className="eight columns"
+                  ),
+        html.Div([
+            dcc.Graph(id='bar_plot_single',
+                      figure=make_bar_plot_single()
+                      ),
+                ], className="four columns"
+                ),
+            ], style={'min-width': '1100px',
+                    'max-width': '1500px'},
+                className="pretty container"
+            ),
     html.Div([
-    daq.Gauge(
-        id='my-gauge',
-        label="CO2/production",
-        value=0.16,
-        max=1,
-        min=0,
-        color={"gradient":True,"ranges":{"green":[0,.6],"yellow":[.6,.8],"red":[.8,1]}},
-    ),
-]),
-        ],style={'min-width': '1100px',
-                'max-width': '1500px'},
-        className="pretty_container"
+        html.Div([
+            daq.Gauge(
+                id='my-gauge',
+                label="CO2/production",
+                value=0.16,
+                max=1,
+                min=0,
+                color={"gradient":True,"ranges":{"green":[0,.6],"yellow":[.6,.8],"red":[.8,1]}}),
+                ], className="four columns",
+                style={'display': 'inline-block',
+                       'margin-top': '70px',
+                       "background-color": "#F9F9F9",
+
+                       },
+                ),
+        html.Div([
+        dcc.Graph(id='bar_plot_delta',
+                  figure=make_bar_plot_delta()
+                  ),
+            ],
+            className="eight columns"
+            ),
+            ],style={'min-width': '1100px',
+                    'max-width': '1500px',
+                    "background-color": "#F9F9F9"},
+                    className="pretty container"
+            ),
+    html.Div([
+    html.Div([
+        dcc.Graph(id='bar_plot_multiple',
+                  figure=make_bar_plot_multiple()
+                  ),
+                  ], className='twelve columns'
+                  ),
+                  ], style={'min-width': '1100px',
+                          'max-width': '1500px'},
+                  className='pretty container'
+                  ),
+
+
+
+        html.Pre(id='relayout-data'),
+
+        ]
         )
 
 app.config.suppress_callback_exceptions = False
@@ -665,6 +805,12 @@ def display_bar_data(relayoutData, dropdown):
      Input('dropdown', 'value')])
 def display_bar_data(relayoutData, dropdown):
     return make_bar_plot_multiple(relayoutData, dropdown)
+@app.callback(
+    Output('bar_plot_delta', 'figure'),
+    [Input('time_plot', 'relayoutData'),
+     Input('dropdown', 'value')])
+def display_bar_delta(relayoutData, dropdown):
+    return make_bar_plot_delta(relayoutData, dropdown)
 @app.callback(
     Output('time_plot', 'figure'),
     [Input('bar_plot_single', 'clickData'),
