@@ -104,7 +104,7 @@ def make_time_plot(clickData=None,
     if dropdown != None:
         items = dropdown
     else:
-        items = ['Electricity', 'Nat. Gas', 'Steam usage', 'CO2/production']
+        items = ['Electricity', 'Nat. Gas', 'Steam usage', 'Energy Intensity']
     if selectedData != None:
         line = pd.Series(pd.DataFrame.from_dict(selectedData['points'])['x'].unique())
     elif clickData != None:
@@ -129,15 +129,6 @@ def make_time_plot(clickData=None,
             else:
                 df2 = df
             for index in df2.index.get_level_values(0).unique():
-                # if plot_type == 'Scatter':
-                #     fig.add_trace(
-                #         go.Scatter(
-                #         name=index,
-                #         y=df2.loc[index].sum(),
-                #         x=df2.columns,
-                #         ),
-                #         )
-                # else:
                 fig.add_trace(
                     go.Bar(
                     name=index,
@@ -151,15 +142,6 @@ def make_time_plot(clickData=None,
             else:
                 df2 = df
             for index in df2.index.get_level_values(0).unique():
-                # if plot_type == 'Scatter':
-                #     fig.add_trace(
-                #     go.Scatter(
-                #     name=index,
-                #     y=df2.loc[index].mean(),
-                #     x=df2.columns,
-                #     ),
-                #     )
-                # else:
                 fig.add_trace(
                 go.Bar(
                 name=index,
@@ -321,7 +303,7 @@ def make_bar_plot_delta(relayoutData=None,
         items = [dropdown[-1]]
     else:
         items = ['Electricity', 'Nat. Gas', 'Steam usage']
-        items = ['CO2/production']
+        items = ['Energy Intensity']
 
     df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
 
@@ -446,7 +428,7 @@ def make_bar_plot_single(relayoutData=None,
         items = [dropdown[-1]]
     else:
         items = ['Electricity', 'Nat. Gas', 'Steam usage']
-        items = ['CO2/production']
+        items = ['Energy Intensity']
 
     df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
 
@@ -469,7 +451,7 @@ def make_bar_plot_single(relayoutData=None,
         titles = ["{}".format(df.index.get_level_values(1).unique()[0])]
         df2 = df.reorder_levels([0,2,1])
         for index in df2.index.get_level_values(0).unique():
-            if '/' not in units: # sum Item values if no '/' otherwise take weight average
+            if '/' not in units[0]: # sum Item values if no '/' otherwise take weight average
                 y=df2.loc[index].sum(axis=1)
             else:
                 y=df2.loc[index].mean(axis=1)
@@ -574,7 +556,7 @@ def make_bar_plot_multiple(relayoutData=None,
         items = dropdown
     else:
         items = ['Electricity', 'Nat. Gas', 'Steam usage']
-        items = items + ['CO2/production']
+        items = items + ['Energy Intensity']
 
     df = data_filt.loc[(data_filt.index.get_level_values(0).isin(items))]
 
@@ -703,7 +685,7 @@ html.Div([
         options=[
             {"label": str(county), "value": str(county)} for county in axis_options
         ],
-        value=['Electricity', 'Nat. Gas', 'Steam usage', 'CO2/production'],
+        value=['Electricity', 'Nat. Gas', 'Steam usage', 'Energy Intensity'],
         multi=True,
         id='dropdown'),
     dcc.RadioItems(
