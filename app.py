@@ -57,7 +57,7 @@ def make_gauge(relayoutData=None,
                  clickData=None,
                  selectedData=None):
     data_filt = data
-    date_title = 'All Time'
+    date_title = ''
     start_str = end_str = None
     if relayoutData != None:
         if ("xaxis.autorange" not in relayoutData.keys()) &\
@@ -80,7 +80,7 @@ def make_gauge(relayoutData=None,
                 start_obj.year, end_obj.month, end_obj.year)
         else:
             data_filt = data
-            date_title = 'All Time'
+            date_title = ''
     if selectedData != None:
         line = pd.Series(pd.DataFrame.from_dict(selectedData['points'])['x'].unique())
     elif clickData != None:
@@ -268,9 +268,9 @@ def make_time_plot(clickData=None,
     fig.update_layout(xaxis_rangeslider_visible=False)
 
     if len(items) == 1:
-        title="TIMESERIES; {}; {}".format(items[0], ", ".join(line.values))
+        title="{}; Lines: {}".format(items[0], ", ".join(line.values))
     else:
-        title="TIMESERIES; {}".format(", ".join(line.values))
+        title="Lines: {}".format(", ".join(line.values))
     fig.update_layout(dict(
         title=title,
         barmode="stack",
@@ -291,7 +291,7 @@ def make_bar_plot_delta(relayoutData=None,
                          dropdown=None,):
     # time filter
     data_filt = data
-    date_title = 'All Time'
+    date_title = ''
     start_str = end_str = None
     if relayoutData != None:
         if ("xaxis.autorange" not in relayoutData.keys()) &\
@@ -314,7 +314,7 @@ def make_bar_plot_delta(relayoutData=None,
                 start_obj.year, end_obj.month, end_obj.year)
         else:
             data_filt = data
-            date_title = 'All Time'
+            date_title = ''
 
     # item filter
     if dropdown != None:
@@ -398,7 +398,7 @@ def make_bar_plot_delta(relayoutData=None,
         }
         )
     if len(items) == 1:
-        title="{}, By Site, {}".format(items[0], date_title)
+        title="{} Delta, By Site {}".format(items[0], date_title)
     else:
         title="By Site: {}".format(date_title)
     fig.update_layout(dict(
@@ -416,7 +416,7 @@ def make_bar_plot_single(relayoutData=None,
                          dropdown=None,):
     # time filter
     data_filt = data
-    date_title = 'All Time'
+    date_title = ''
     start_str = end_str = None
     if relayoutData != None:
         if ("xaxis.autorange" not in relayoutData.keys()) &\
@@ -439,7 +439,7 @@ def make_bar_plot_single(relayoutData=None,
                 start_obj.year, end_obj.month, end_obj.year)
         else:
             data_filt = data
-            date_title = 'All Time'
+            date_title = ''
 
     # item filter
     if dropdown != None:
@@ -526,7 +526,7 @@ def make_bar_plot_single(relayoutData=None,
         }
         )
     if len(items) == 1:
-        title="{}, By Site, {}".format(items[0], date_title)
+        title="{}, By Site {}".format(items[0], date_title)
     else:
         title="By Site: {}".format(date_title)
     fig.update_layout(dict(
@@ -544,7 +544,7 @@ def make_bar_plot_multiple(relayoutData=None,
                   dropdown=None,):
     # time filter
     data_filt = data
-    date_title = 'All Time'
+    date_title = ''
     start_str = end_str = None
     if relayoutData != None:
         if ("xaxis.autorange" not in relayoutData.keys()) &\
@@ -567,7 +567,7 @@ def make_bar_plot_multiple(relayoutData=None,
                 start_obj.year, end_obj.month, end_obj.year)
         else:
             data_filt = data
-            date_title = 'All Time'
+            date_title = ''
 
     # item filter
     if dropdown != None:
@@ -681,7 +681,7 @@ def make_bar_plot_multiple(relayoutData=None,
         }
         )
     if len(items) == 1:
-        title="{}, By Site, {}".format(items[0], date_title)
+        title="{}, By Site {}".format(items[0], date_title)
     else:
         title="By Site: {}".format(date_title)
     fig.update_layout(dict(
@@ -711,7 +711,8 @@ html.Div([
                 options=[{'label': i, 'value': i} for i in ['Month', 'Year']],
                 value='Month',
                 labelStyle={'display': 'inline-block'}),
-            ], className="twelve columns"
+            ], className="twelve columns",
+
             ),
 
         html.Div([
@@ -727,7 +728,8 @@ html.Div([
                 ], className="four columns"
                 ),
             ], style={'min-width': '1100px',
-                    'max-width': '1500px'},
+                    'max-width': '1500px',
+                "background-color": "#F9F9F9"},
                 className="pretty container"
             ),
     html.Div([
