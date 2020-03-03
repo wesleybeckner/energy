@@ -746,7 +746,8 @@ def calc_key_takeaways(relayoutData):
 
 # Describe the layout/ UI of the app
 app.layout = html.Div([
-html.Div([
+# html.Div([
+# html.Div([
 html.Div([
 html.Div([
 html.Div(
@@ -755,40 +756,40 @@ html.Div(
                                     [html.H6(id="co2_text"), html.P("CO2"),
                                     html.P(id="co2_percent")],
                                     id="co2",
-                                    # style={
-                                    # 'min-width': '300px',
-                                    # 'max-width': '400px',
-                                    # },
+                                    style={
+                                    'min-width': '190px',
+                                    'max-width': '400px',
+                                    },
                                     className="mini_container",
                                 ),
                                 html.Div(
                                     [html.H6(id="production_text"), html.P("Production"),
                                     html.P(id="production_percent")],
                                     id="production",
-                                    # style={
-                                    # 'min-width': '200px',
-                                    # 'max-width': '400px',
-                                    # },
+                                    style={
+                                    'min-width': '190px',
+                                    'max-width': '400px',
+                                    },
                                     className="mini_container",
                                 ),
                                 html.Div(
                                     [html.H6(id="energy_text"), html.P("Energy Intensity"),
                                     html.P(id="energy_percent")],
                                     id="energy",
-                                    # style={
-                                    # 'min-width': '200px',
-                                    # 'max-width': '400px',
-                                    # },
+                                    style={
+                                    'min-width': '190px',
+                                    'max-width': '400px',
+                                    },
                                     className="mini_container",
                                 ),
                                 html.Div(
                                     [html.H6(id="ratio_text"), html.P("CO2/Production"),
                                     html.P(id="ratio_percent")],
                                     id="ratio",
-                                    # style={
-                                    # 'min-width': '300px',
-                                    # 'max-width': '400px',
-                                    # },
+                                    style={
+                                    'min-width': '190px',
+                                    'max-width': '400px',
+                                    },
                                     className="mini_container",
                                 ),
                             ],
@@ -796,36 +797,43 @@ html.Div(
                             className="row container-display",
                             # style={'max-width': '1600px'},
                         ),
-#                         ],
-#                     id="top-column",
-#                     className="twelve columns",
-#                 ),
+                #         ],
+                #     id="top-column",
+                #     className="twelve columns",
+                # ),
 #             ],
 #             className="row flex-display",
 #         ),
-#                 html.Div([
+                html.Div([
 html.Div([
-                    html.Div([
+                    # html.Div([
                     dcc.Graph(id='bar_plot_delta',
                               figure=make_bar_plot_delta()
                               ),
                               ],
-                              className="pretty container",
+                              className="six columns",
                               ),
+                              # ],
+                              # className="pretty container",
+                              # ),
 
+                    # html.Div([
                     html.Div([
                         dcc.Graph(id='bar_plot_single',
                                   figure=make_bar_plot_single()
                                   ),
-                            ],
-                            className="pretty container",
+                            ],className="six columns"
                                 # style={'margin-top': '50px',
                                 #         'margin-left': '10px',}
                             ),
-                            ],className="row flex-display"
+                            # ],
+                            # className="pretty container",
+                            # ),
+                            ],
+                            className="row flex-display",
                             ),
                         ],
-                        className="twelve columns"
+                        className="pretty container"
                         ),
                         ],
                         # style={'min-width': '1100px',
@@ -836,13 +844,13 @@ html.Div([
                         ),
 
 
-            ],
+            # ],
             # style={'min-width': '1200px',
             #         'max-width': '1600px',
             #     # "background-color": "#F9F9F9"
                 # },
-                className="pretty container"
-            ),
+            #     className="pretty container"
+            # ),
     # html.Div([
     #     daq.Gauge(
     #         id='my-gauge',
@@ -904,7 +912,9 @@ html.Div([
 
         html.Pre(id='relayout-data'),
 
-        ]
+        ],
+        id="mainContainer",
+        style={"display": "flex", "flex-direction": "column"},
         )
 
 app.config.suppress_callback_exceptions = False
