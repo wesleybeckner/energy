@@ -257,7 +257,9 @@ def make_time_plot(clickData=None,
         title=title,
         barmode="stack",
         xaxis={'rangeselector': {'buttons': list([{'count': 1, 'label': '1M', 'step': 'month', 'stepmode': 'backward'},
+                                                  {'count': 3, 'label': '3M', 'step': 'month', 'stepmode': 'backward'},
                                                   {'count': 6, 'label': '6M', 'step': 'month', 'stepmode': 'backward'},
+                                                  {'count': 1, 'label': '1Y', 'step': 'year', 'stepmode': 'backward'},
                                                   {'step': 'all'}])}},
 
 
@@ -677,82 +679,226 @@ def make_bar_plot_multiple(relayoutData=None,
     })
     return fig
 
+def calc_key_takeaways(relayoutData):
+    # time filter
+    data_filt = data
+    start_str = end_str = None
+    metrics = ["CO2", "Production", "Energy Intensity", "CO2/production"]
+    if relayoutData != None:
+        if ("xaxis.autorange" not in relayoutData.keys()) &\
+           ("autosize" not in relayoutData.keys()):
+            if 'xaxis.range' in relayoutData.keys():
+                start_str = relayoutData['xaxis.range'][0]
+                end_str = relayoutData['xaxis.range'][1]
+            elif "xaxis.range[0]" in relayoutData.keys():
+                start_str = relayoutData["xaxis.range[0]"]
+                end_str = relayoutData["xaxis.range[1]"]
+            start_str = start_str.split(" ")[0]
+            end_str = end_str.split(" ")[0]
+            start_obj = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+            end_obj = datetime.datetime.strptime(end_str, '%Y-%m-%d')
+            cols = [col for col in data.columns if (col >= start_obj) &
+                                                    (col <= end_obj)]
+            data_filt = data[cols]
+
+            #calculate totals for CO2, Energy, Production
+
+            months = np.round((end_obj - start_obj).days/31)
+            timedelta = (end_obj - start_obj)
+            prev_period_start = start_obj - timedelta
+            cols = [col for col in data.columns if (col <= start_obj) &
+                                                            (col >= prev_period_start)]
+            data_filt_prev = data[cols]
+
+            prevs = []
+            totals = []
+            for index, met in enumerate(metrics):
+
+                if ("/" not in met) and (" " not in met):
+                    total = data_filt.loc[met].sum(axis=1).sum()
+                    prev = data_filt_prev.loc[met].sum(axis=1).sum()
+                else:
+                    total = data_filt.loc[met].mean(axis=1).mean()
+                    prev = data_filt_prev.loc[met].mean(axis=1).mean()
+                unit =  data_filt.loc[met].index.get_level_values(0).unique()[0]
+
+                percent = (total - prev) / prev * 100
+
+                prevs.append("{:.2f}% since last {:.0f}mo".format(percent, months))
+                totals.append("{:.2f} {}".format(total, unit))
+            df = pd.DataFrame([totals,prevs])
+            df.columns = metrics
+    else:
+        data_filt = data
+        totals = []
+
+        for index, met in enumerate(metrics):
+            if ("/" not in met) and (" " not in met):
+                totals.append(data_filt.loc[met].sum(axis=1).sum())
+                # prevs.append(data_filt_prev.loc[met].sum(axis=1).sum())
+            else:
+                totals.append(data_filt.loc[met].mean(axis=1).mean())
+                # prevs.append(data_filt_prev.loc[met].mean(axis=1).mean())
+        df = pd.DataFrame([totals])
+        df.columns = metrics
+
+    return df
+
 # Describe the layout/ UI of the app
 app.layout = html.Div([
 html.Div([
 html.Div([
-    dcc.Dropdown(
-        options=[
-            {"label": str(county), "value": str(county)} for county in axis_options
-        ],
-        value=['Electricity', 'Nat. Gas', 'Steam usage', 'Energy Intensity'],
-        multi=True,
-        id='dropdown'),
-    dcc.RadioItems(
-                id='sample',
-                options=[{'label': i, 'value': i} for i in ['Month', 'Year']],
-                value='Month',
-                labelStyle={'display': 'inline-block'}),
-            ], className="twelve columns",
+html.Div([
+html.Div(
+                            [
+                                html.Div(
+                                    [html.H6(id="co2_text"), html.P("CO2"),
+                                    html.P(id="co2_percent")],
+                                    id="co2",
+                                    # style={
+                                    # 'min-width': '300px',
+                                    # 'max-width': '400px',
+                                    # },
+                                    className="mini_container",
+                                ),
+                                html.Div(
+                                    [html.H6(id="production_text"), html.P("Production"),
+                                    html.P(id="production_percent")],
+                                    id="production",
+                                    # style={
+                                    # 'min-width': '200px',
+                                    # 'max-width': '400px',
+                                    # },
+                                    className="mini_container",
+                                ),
+                                html.Div(
+                                    [html.H6(id="energy_text"), html.P("Energy Intensity"),
+                                    html.P(id="energy_percent")],
+                                    id="energy",
+                                    # style={
+                                    # 'min-width': '200px',
+                                    # 'max-width': '400px',
+                                    # },
+                                    className="mini_container",
+                                ),
+                                html.Div(
+                                    [html.H6(id="ratio_text"), html.P("CO2/Production"),
+                                    html.P(id="ratio_percent")],
+                                    id="ratio",
+                                    # style={
+                                    # 'min-width': '300px',
+                                    # 'max-width': '400px',
+                                    # },
+                                    className="mini_container",
+                                ),
+                            ],
+                            id="info-container",
+                            className="row container-display",
+                            # style={'max-width': '1600px'},
+                        ),
+#                         ],
+#                     id="top-column",
+#                     className="twelve columns",
+#                 ),
+#             ],
+#             className="row flex-display",
+#         ),
+#                 html.Div([
+html.Div([
+                    html.Div([
+                    dcc.Graph(id='bar_plot_delta',
+                              figure=make_bar_plot_delta()
+                              ),
+                              ],
+                              className="pretty container",
+                              ),
 
+                    html.Div([
+                        dcc.Graph(id='bar_plot_single',
+                                  figure=make_bar_plot_single()
+                                  ),
+                            ],
+                            className="pretty container",
+                                # style={'margin-top': '50px',
+                                #         'margin-left': '10px',}
+                            ),
+                            ],className="row flex-display"
+                            ),
+                        ],
+                        className="twelve columns"
+                        ),
+                        ],
+                        # style={'min-width': '1100px',
+                        #         'max-width': '1500px'},
+                                # "background-color": "#F9F9F9"},
+                                className="row flex-display",
+                                # style={'max-width': '1600px'},
+                        ),
+
+
+            ],
+            # style={'min-width': '1200px',
+            #         'max-width': '1600px',
+            #     # "background-color": "#F9F9F9"
+                # },
+                className="pretty container"
             ),
+    # html.Div([
+    #     daq.Gauge(
+    #         id='my-gauge',
+    #         label="CO2/production",
+    #         value=0.16,
+    #         max=1,
+    #         min=0,
+    #         color={"gradient":True,"ranges":{"green":[0,.6],"yellow":[.6,.8],"red":[.8,1]}}),
+    #         ], className="four columns",
+    #         style={'display': 'inline-block',
+    #                'margin-top': '70px',
+    #                # "background-color": "#F9F9F9",
+    #
+    #                },
+    #         ),
 
+    html.Div([
         html.Div([
+            html.Div([
+            dcc.Dropdown(
+                options=[
+                    {"label": str(county), "value": str(county)} for county in axis_options
+                ],
+                value=['Electricity', 'Nat. Gas', 'Steam usage', 'Energy Intensity'],
+                multi=True,
+                id='dropdown'),
+            dcc.RadioItems(
+                        id='sample',
+                        options=[{'label': i, 'value': i} for i in ['Month', 'Year']],
+                        value='Month',
+                        labelStyle={'display': 'inline-block'}),
+                        ],
+                        className='mini_container',
+                        ),
             dcc.Graph(id='time_plot',
                       figure=make_time_plot()
                       ),
-                  ], className="eight columns"
+                  ], className="twelve columns"
                   ),
-        html.Div([
-            dcc.Graph(id='bar_plot_single',
-                      figure=make_bar_plot_single()
-                      ),
-                ], className="four columns"
-                ),
-            ], style={'min-width': '1100px',
-                    'max-width': '1500px',
-                "background-color": "#F9F9F9"},
-                className="pretty container"
-            ),
-    html.Div([
-        html.Div([
-            daq.Gauge(
-                id='my-gauge',
-                label="CO2/production",
-                value=0.16,
-                max=1,
-                min=0,
-                color={"gradient":True,"ranges":{"green":[0,.6],"yellow":[.6,.8],"red":[.8,1]}}),
-                ], className="four columns",
-                style={'display': 'inline-block',
-                       'margin-top': '70px',
-                       "background-color": "#F9F9F9",
 
-                       },
-                ),
-        html.Div([
-        dcc.Graph(id='bar_plot_delta',
-                  figure=make_bar_plot_delta()
+                  ],
+                  # style={'min-width': '1200px',
+                  #         'max-width': '1600px'},
+                     className = "pretty container",
                   ),
-            ],
-            className="eight columns"
-            ),
-            ],style={'min-width': '1100px',
-                    'max-width': '1500px',
-                    "background-color": "#F9F9F9"},
-                    className="pretty container"
-            ),
-    html.Div([
-    html.Div([
-        dcc.Graph(id='bar_plot_multiple',
-                  figure=make_bar_plot_multiple()
-                  ),
-                  ], className='twelve columns'
-                  ),
-                  ], style={'min-width': '1100px',
-                          'max-width': '1500px'},
-                  className='pretty container'
-                  ),
+    # html.Div([
+    # html.Div([
+    #     dcc.Graph(id='bar_plot_multiple',
+    #               figure=make_bar_plot_multiple()
+    #               ),
+    #               ], className='twelve columns'
+    #               ),
+    #               ], style={'min-width': '1100px',
+    #                       'max-width': '1500px'},
+    #               className='pretty container'
+    #               ),
 
 
 
@@ -769,26 +915,57 @@ app.config.suppress_callback_exceptions = False
 #     [Input('bar_plot_single', 'selectedData')])
 # def display_relayout_data(selectedData):
 #     return json.dumps(selectedData, indent=2)
+# @app.callback(
+#     Output('my-gauge', 'value'),
+#     [Input('time_plot', 'relayoutData'),
+#      Input('bar_plot_single', 'clickData'),
+#      Input('bar_plot_single', 'selectedData')]
+# )
+# def update_gauge(relayoutData, clickData, selectedData):
+#     return make_gauge(relayoutData, clickData, selectedData)
 @app.callback(
-    Output('my-gauge', 'value'),
-    [Input('time_plot', 'relayoutData'),
-     Input('bar_plot_single', 'clickData'),
-     Input('bar_plot_single', 'selectedData')]
-)
-def update_gauge(relayoutData, clickData, selectedData):
-    return make_gauge(relayoutData, clickData, selectedData)
+    [Output('co2_text', 'children'),
+    Output('co2_percent', 'children')],
+    [Input('time_plot', 'relayoutData')])
+def update_met1(relayoutData):
+    df = calc_key_takeaways(relayoutData)
+    value1 = df[df.columns[0]].values[0]
+    value2 = df[df.columns[0]].values[1]
+    return value1, value2
+@app.callback(
+    [Output('production_text', 'children'),
+    Output('production_percent', 'children')],
+    [Input('time_plot', 'relayoutData')])
+def update_met1(relayoutData):
+    df = calc_key_takeaways(relayoutData)
+    value1 = df[df.columns[1]].values[0]
+    value2 = df[df.columns[1]].values[1]
+    return value1, value2
+@app.callback(
+    [Output('energy_text', 'children'),
+    Output('energy_percent', 'children')],
+    [Input('time_plot', 'relayoutData')])
+def update_met1(relayoutData):
+    df = calc_key_takeaways(relayoutData)
+    value1 = df[df.columns[2]].values[0]
+    value2 = df[df.columns[2]].values[1]
+    return value1, value2
+@app.callback(
+    [Output('ratio_text', 'children'),
+    Output('ratio_percent', 'children')],
+    [Input('time_plot', 'relayoutData')])
+def update_met1(relayoutData):
+    df = calc_key_takeaways(relayoutData)
+    value1 = df[df.columns[3]].values[0]
+    value2 = df[df.columns[3]].values[1]
+    return value1, value2
+
 @app.callback(
     Output('bar_plot_single', 'figure'),
     [Input('time_plot', 'relayoutData'),
      Input('dropdown', 'value')])
 def display_bar_data(relayoutData, dropdown):
     return make_bar_plot_single(relayoutData, dropdown)
-@app.callback(
-    Output('bar_plot_multiple', 'figure'),
-    [Input('time_plot', 'relayoutData'),
-     Input('dropdown', 'value')])
-def display_bar_data(relayoutData, dropdown):
-    return make_bar_plot_multiple(relayoutData, dropdown)
 @app.callback(
     Output('bar_plot_delta', 'figure'),
     [Input('time_plot', 'relayoutData'),
@@ -804,6 +981,12 @@ def display_bar_delta(relayoutData, dropdown):
 )
 def display_time_plot(barClickData, barSelectedData, dropdown, sample):
     return make_time_plot(barClickData, barSelectedData, dropdown, sample)
+# @app.callback(
+#     Output('bar_plot_multiple', 'figure'),
+#     [Input('time_plot', 'relayoutData'),
+#      Input('dropdown', 'value')])
+# def display_bar_data(relayoutData, dropdown):
+#     return make_bar_plot_multiple(relayoutData, dropdown)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
