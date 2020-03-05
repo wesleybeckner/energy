@@ -16,7 +16,9 @@ import datetime
 data = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard', header=0)
 data_cto = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard CTO', header=0)
 data = data.set_index(['Item', 'Units', 'Plant'])
+data_cto = data_cto.set_index(['Item', 'Units', 'Plant'])
 data.columns = pd.to_datetime(data.columns)
+data_cto.columns = pd.to_datetime(data_cto.columns)
 axis_options = data.index.get_level_values(0).unique()
 metrics = ["CO2", "Production", "Energy Intensity", "CO2/production"]
 app = dash.Dash(
@@ -398,6 +400,27 @@ app.layout = html.Div([
                 ),
             ],
             className="row flex-display"
+            ),
+        html.Div([
+            html.H6(["Background"]),
+            dcc.Markdown('''
+                * Corporate level KPIs:
+                    * Energy intensity – unit GJ/mt of production
+                    * GHG intensity – unit mtCO2/ton of production
+                    * Reporting frequency: quarterly – display monthly actuals
+                        and cumulative year
+                    * Reporting/Visualizing method: Dash/Flask + python
+
+                * Plant level KPIs:
+                    * Plant energy intensity – unit GJ/mt of production
+                    * Plant GHG intensity – unit GJ/mt of production
+                    * Plant energy consumption total – GJ + local unit
+                    * Plant GHG total – mtCO2
+                    * Reporting frequency: monthly, cumulative year
+                    * Reporting/Visualizing method: Dash/Flask + python
+            ''')
+            ],
+            className='mini_container'
             ),
         ],
         className='container',
