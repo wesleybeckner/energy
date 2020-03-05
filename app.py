@@ -14,6 +14,7 @@ import numpy as np
 import datetime
 
 data = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard', header=0)
+data_cto = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard CTO', header=0)
 data = data.set_index(['Item', 'Units', 'Plant'])
 data.columns = pd.to_datetime(data.columns)
 axis_options = data.index.get_level_values(0).unique()

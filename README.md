@@ -1,8 +1,8 @@
-# Dash Financial Report
+<small>[wesley beckner](http://wesleybeckner.github.io)</small>
 
-This is a demo of the [Dash](https://plot.ly/products/dash/) interactive Python framework developed by [Plotly](https://plot.ly/).
+# Energy Dashboard
 
-Dash abstracts away all of the technologies and protocols required to build an interactive web-based application and is a simple and effective way to bind a user interface around your Python code. To learn more about Dash, take a look at our [documentation](https://dash.plot.ly). If you're interested in deploying this application, check out [Dash Deployment Server](https://dash.plot.ly/dash-deployment-server/) - Plotly's commercial offering for hosting and sharing Dash Apps on-premise or in the cloud.
+This is an energy dashboard demo using [Dash](https://plot.ly/products/dash/) 
 
 ## Getting Started
 
@@ -40,17 +40,26 @@ python app.py
 
 ## About the app
 
-This is an interactive, multi-page report which displays a variety of tables, bullet points, and Plotly interactive plots in a report format. The app incorporates custom local and external CSS to display distinct pages for PDF print.
+This is an interactive app for high-level viewing of manufacturing energy consumption data with green house gas emission
+
+o	Corporate Management level – Ops lead team, Sustainability council
+	Output KPI’s:
+•	Energy intensity Kraton – unit GJ/mt of production 
+•	GHG intensity Kraton – unit mtCO2/ton of production
+•	Reporting frequency: quarterly – display monthly actuals and cumulative year
+•	Split between Polymer segment and Chemical segment
+•	Reporting/Visualizing method: new system
+•	
+o	Plant management level – Plant lead team (+ info screens)
+•	Plant energy intensity – unit GJ/mt of production
+•	Plant GHG intensity – unit GJ/mt of production
+•	Plant energy consumption total – GJ + local unit
+•	Plant GHG total – mtCO2
+•	Reporting frequency: monthly, cumulative year
+•	Reporting/Visualizing method: new system
+
 
 ## Built With
 
 - [Dash](https://dash.plot.ly/) - Main server and interactive components
 - [Plotly Python](https://plot.ly/python/) - Used to create the interactive plots
-
-The following are screenshots for the app in this repo:
-
-![animated](screenshots/dash-financial-report-demo.gif)
-
-![screenshot](screenshots/report-screenshot.png)
-
-![screenshot](screenshots/report-interactive.png)
