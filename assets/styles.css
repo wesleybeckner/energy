@@ -89,10 +89,6 @@ body {
   margin-right: 10px;
   margin-top: 30px;
 }
-#subtitle {
-  text-align: center;
-}
-
 #title {
   text-align: center;
 }
@@ -111,11 +107,11 @@ body {
   flex-direction: column;
 }
 
-#wells {
+#co2 {
   flex: 1;
 }
 
-#gas {
+#production {
   flex: 1;
 }
 
@@ -123,11 +119,11 @@ body {
   align-items: center;
 }
 
-#oil {
+#energy {
   flex: 1;
 }
 
-#water {
+#ratio {
   flex: 1;
 }
 
