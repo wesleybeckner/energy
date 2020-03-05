@@ -1,4 +1,4 @@
-<small>[wesley beckner](http://wesleybeckner.github.io)</small>
+<small>created by [wesley beckner](http://wesleybeckner.github.io)</small>
 
 # Energy Dashboard
 
@@ -8,15 +8,12 @@ This is an energy dashboard demo using [Dash](https://plot.ly/products/dash/)
 
 ### Running the app locally
 
-First create a virtual environment with conda or venv inside a temp folder, then activate it.
+First create a virtual environment with conda (or venv) and activate it.
 
 ```
-virtualenv venv
 
-# Windows
-venv\Scripts\activate
-# Or Linux
-source venv/bin/activate
+conda create -n <your_env_name> python==3.7
+source activate <your_env_name>
 
 ```
 
@@ -24,8 +21,8 @@ Clone the git repo, then install the requirements with pip
 
 ```
 
-git clone https://github.com/plotly/dash-sample-apps
-cd dash-sample-apps/apps/dash-financial-report
+git clone https://github.com/wesleybeckner/energy.git
+cd energy
 pip install -r requirements.txt
 
 ```
@@ -42,21 +39,22 @@ python app.py
 
 This is an interactive app for high-level viewing of manufacturing energy consumption data with green house gas emission
 
-o	Corporate Management level – Ops lead team, Sustainability council
-	Output KPI’s:
-•	Energy intensity Kraton – unit GJ/mt of production 
-•	GHG intensity Kraton – unit mtCO2/ton of production
-•	Reporting frequency: quarterly – display monthly actuals and cumulative year
-•	Split between Polymer segment and Chemical segment
-•	Reporting/Visualizing method: new system
-•	
-o	Plant management level – Plant lead team (+ info screens)
-•	Plant energy intensity – unit GJ/mt of production
-•	Plant GHG intensity – unit GJ/mt of production
-•	Plant energy consumption total – GJ + local unit
-•	Plant GHG total – mtCO2
-•	Reporting frequency: monthly, cumulative year
-•	Reporting/Visualizing method: new system
+1. Corporate management level
+    * Output KPIs:
+        * Energy intensity – unit GJ/mt of production 
+        * GHG intensity – unit mtCO2/ton of production
+        * Reporting frequency: quarterly – display monthly actuals and cumulative year
+        * Split between Polymer segment and Chemical segment
+        * Reporting/Visualizing method: Dash/Flask + python
+
+2. Plant management level
+    * Output KPIs:
+        * Plant energy intensity – unit GJ/mt of production
+        * Plant GHG intensity – unit GJ/mt of production
+        * Plant energy consumption total – GJ + local unit
+        * Plant GHG total – mtCO2
+        * Reporting frequency: monthly, cumulative year
+        * Reporting/Visualizing method: Dash/Flask + python
 
 
 ## Built With
