@@ -2,7 +2,7 @@
 
 # Energy Dashboard
 
-This is an energy dashboard demo using [Dash](https://plot.ly/products/dash/) 
+This is an [energy dashboard](https://belpre.herokuapp.com) demo using [Dash](https://plot.ly/products/dash/) 
 
 ## Getting Started
 
@@ -44,7 +44,6 @@ This is an interactive app for high-level viewing of manufacturing energy consum
         * Energy intensity – unit GJ/mt of production 
         * GHG intensity – unit mtCO2/ton of production
         * Reporting frequency: quarterly – display monthly actuals and cumulative year
-        * Split between Polymer segment and Chemical segment
         * Reporting/Visualizing method: Dash/Flask + python
 
 2. Plant management level
