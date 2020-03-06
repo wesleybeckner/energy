@@ -404,20 +404,20 @@ app.layout = html.Div([
         html.Div([
             html.H6(["Background"]),
             dcc.Markdown('''
-                * Corporate level KPIs:
-                    * Energy intensity – unit GJ/mt of production
-                    * GHG intensity – unit mtCO2/ton of production
-                    * Reporting frequency: quarterly – display monthly actuals
-                        and cumulative year
-                    * Reporting/Visualizing method: Dash/Flask + python
+* Corporate level KPIs:
+  * Energy intensity – unit GJ/mt of production
+  * GHG intensity – unit mtCO2/ton of production
+  * Reporting frequency: quarterly – display monthly actuals and cumulative year
+  * Reporting/Visualizing method: Dash/Flask + python
 
-                * Plant level KPIs:
-                    * Plant energy intensity – unit GJ/mt of production
-                    * Plant GHG intensity – unit GJ/mt of production
-                    * Plant energy consumption total – GJ + local unit
-                    * Plant GHG total – mtCO2
-                    * Reporting frequency: monthly, cumulative year
-                    * Reporting/Visualizing method: Dash/Flask + python
+
+* Plant level KPIs:
+  * Plant energy intensity – unit GJ/mt of production
+  * Plant GHG intensity – unit GJ/mt of production
+  * Plant energy consumption total – GJ + local unit
+  * Plant GHG total – mtCO2
+  * Reporting frequency: monthly, cumulative year
+  * Reporting/Visualizing method: Dash/Flask + python
             ''')
             ],
             className='mini_container'
