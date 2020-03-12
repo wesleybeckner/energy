@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import dash
+import dash_auth
 import json
 import dash_core_components as dcc
 import dash_daq as daq
@@ -13,6 +14,10 @@ import pandas as pd
 import numpy as np
 import datetime
 
+VALID_USERNAME_PASSWORD_PAIRS = {
+    'kraton': 'energy'
+}
+
 data = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard', header=0)
 data_cto = pd.read_excel('data/energy.xlsx', sheet_name='Data for Dashboard CTO', header=0)
 data = data.set_index(['Item', 'Units', 'Plant'])
@@ -24,6 +29,12 @@ metrics = ["CO2", "Production", "Energy Intensity", "CO2/production"]
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
 )
+
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
+
 server = app.server
 initial_range = [
 '2019-07-01', '2019-10-01'
